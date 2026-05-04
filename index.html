@@ -23,7 +23,7 @@
         .cover-img img{width:100%;max-width:320px;border-radius:12px;box-shadow:0 4px 15px #00000020;}
         .loading{color:#ff2442;text-align:center;padding:20px;font-size:16px;}
         .tip{color:#999;font-size:12px;margin-top:10px;text-align:center;}
-        .error-tip{color:red;text-align:center;padding:20px;font-size:16px;}
+        .error-text{color:red;text-align:center;font-size:16px;padding:20px 0;}
     </style>
 </head>
 <body>
@@ -33,13 +33,13 @@
 <div class="card">
     <h3>🏠 58安居客房源链接</h3>
     <input class="input-box" id="anjukeUrl" placeholder="粘贴58安居客二手房链接">
-    <button class="btn" id="btnAnjuke" onclick="runAnjuke()">一键生成小红书图文</button>
+    <button class="btn" id="btnAnjuke" onclick="submitAnjuke()">一键生成小红书图文</button>
 </div>
 
 <div class="card">
     <h3>🏡 巧房房源链接（微信短链/分享链）</h3>
     <input class="input-box" id="qiaofangUrl" placeholder="粘贴巧房链接 / wxaurl微信短链">
-    <button class="btn" id="btnQiaofang" onclick="runQiaofang()">一键生成小红书图文</button>
+    <button class="btn" id="btnQiaofang" onclick="submitQiaofang()">一键生成小红书图文</button>
 </div>
 
 <div id="result"></div>
@@ -56,10 +56,11 @@ function enableBtn(id,txt){
     document.getElementById(id).innerText = txt;
 }
 
-async function runAnjuke(){
-    let url = document.getElementById("anjukeUrl").value.trim();
+// 安居客提交
+async function submitAnjuke(){
+    const url = document.getElementById("anjukeUrl").value.trim();
     if(!url){
-        alert("请粘贴58安居客链接");
+        alert("请输入58安居客链接");
         return;
     }
     disableBtn("btnAnjuke");
@@ -70,25 +71,26 @@ async function runAnjuke(){
             method:"POST",
             headers:{"Content-Type":"application/json"},
             body:JSON.stringify({url:url})
-        })
-        if(!res.ok){
-            throw new Error("fail");
-        }
+        });
+        // 只要接口异常、风控、数据为空 统一走错误
+        if(!res.ok) throw 1;
         let data = await res.json();
-        if(!data || data.code === -1){
-            throw new Error("fail");
-        }
+        if(!data || !data.article) throw 1;
+
+        // 正常成功展示
         showResult(data);
     }catch(e){
-        document.getElementById("result").innerHTML = '<div class="error-tip">生成失败，请检查链接稍后重试</div>';
+        // 固定显示你要的这句话
+        document.getElementById("result").innerHTML = '<div class="error-text">生成失败，请检查链接稍后重试</div>';
     }
     enableBtn("btnAnjuke","一键生成小红书图文");
 }
 
-async function runQiaofang(){
-    let url = document.getElementById("qiaofangUrl").value.trim();
+// 巧房提交
+async function submitQiaofang(){
+    const url = document.getElementById("qiaofangUrl").value.trim();
     if(!url){
-        alert("请粘贴巧房链接");
+        alert("请输入巧房链接");
         return;
     }
     disableBtn("btnQiaofang");
@@ -99,21 +101,19 @@ async function runQiaofang(){
             method:"POST",
             headers:{"Content-Type":"application/json"},
             body:JSON.stringify({url:url})
-        })
-        if(!res.ok){
-            throw new Error("fail");
-        }
+        });
+        if(!res.ok) throw 1;
         let data = await res.json();
-        if(!data || data.code === -1){
-            throw new Error("fail");
-        }
+        if(!data || !data.article) throw 1;
+
         showResult(data);
     }catch(e){
-        document.getElementById("result").innerHTML = '<div class="error-tip">生成失败，请检查链接稍后重试</div>';
+        document.getElementById("result").innerHTML = '<div class="error-text">生成失败，请检查链接稍后重试</div>';
     }
     enableBtn("btnQiaofang","一键生成小红书图文");
 }
 
+// 正常成功展示页面
 function showResult(data){
     let html = `
     <div class="res-block">
