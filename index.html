@@ -23,6 +23,7 @@
         .cover-img img{width:100%;max-width:320px;border-radius:12px;box-shadow:0 4px 15px #00000020;}
         .loading{color:#ff2442;text-align:center;padding:20px;font-size:16px;}
         .tip{color:#999;font-size:12px;margin-top:10px;text-align:center;}
+        .error-tip{color:red;text-align:center;padding:20px;font-size:16px;}
     </style>
 </head>
 <body>
@@ -38,13 +39,12 @@
 <div class="card">
     <h3>🏡 巧房房源链接（微信短链/分享链）</h3>
     <input class="input-box" id="qiaofangUrl" placeholder="粘贴巧房链接 / wxaurl微信短链">
-    <button class="btn" id="btnQiaofang" onclick="runAnjuke()">一键生成小红书图文</button>
+    <button class="btn" id="btnQiaofang" onclick="runQiaofang()">一键生成小红书图文</button>
 </div>
 
 <div id="result"></div>
 
 <script>
-// 后端接口已内置，无需你修改
 const API_HOST = "https://api-house.xiaohongshu-tool.com";
 
 function disableBtn(id){
@@ -57,18 +57,13 @@ function enableBtn(id,txt){
 }
 
 async function runAnjuke(){
-    let anjukeUrl = document.getElementById("anjukeUrl").value.trim();
-    let qiaofangUrl = document.getElementById("qiaofangUrl").value.trim();
-    let url = anjukeUrl || qiaofangUrl;
-
+    let url = document.getElementById("anjukeUrl").value.trim();
     if(!url){
-        alert("请粘贴任意一个平台房源链接");
+        alert("请粘贴58安居客链接");
         return;
     }
-
-    let btnId = anjukeUrl ? "btnAnjuke" : "btnQiaofang";
-    disableBtn(btnId);
-    document.getElementById("result").innerHTML = '<div class="loading">正在抓取房源信息👉 AI生成火兔同款合规文案👉 自动制作小红书封面...</div>';
+    disableBtn("btnAnjuke");
+    document.getElementById("result").innerHTML = '<div class="loading">正在生成中...</div>';
 
     try{
         let res = await fetch(`${API_HOST}/api/house`,{
@@ -76,12 +71,47 @@ async function runAnjuke(){
             headers:{"Content-Type":"application/json"},
             body:JSON.stringify({url:url})
         })
+        if(!res.ok){
+            throw new Error("fail");
+        }
         let data = await res.json();
+        if(!data || data.code === -1){
+            throw new Error("fail");
+        }
         showResult(data);
     }catch(e){
-        document.getElementById("result").innerHTML = '<div class="loading">生成失败，请检查链接稍后重试</div>';
+        document.getElementById("result").innerHTML = '<div class="error-tip">生成失败，请检查链接稍后重试</div>';
     }
-    enableBtn(btnId,"一键生成小红书图文");
+    enableBtn("btnAnjuke","一键生成小红书图文");
+}
+
+async function runQiaofang(){
+    let url = document.getElementById("qiaofangUrl").value.trim();
+    if(!url){
+        alert("请粘贴巧房链接");
+        return;
+    }
+    disableBtn("btnQiaofang");
+    document.getElementById("result").innerHTML = '<div class="loading">正在生成中...</div>';
+
+    try{
+        let res = await fetch(`${API_HOST}/api/house`,{
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({url:url})
+        })
+        if(!res.ok){
+            throw new Error("fail");
+        }
+        let data = await res.json();
+        if(!data || data.code === -1){
+            throw new Error("fail");
+        }
+        showResult(data);
+    }catch(e){
+        document.getElementById("result").innerHTML = '<div class="error-tip">生成失败，请检查链接稍后重试</div>';
+    }
+    enableBtn("btnQiaofang","一键生成小红书图文");
 }
 
 function showResult(data){
